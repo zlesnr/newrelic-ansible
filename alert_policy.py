@@ -58,9 +58,11 @@ def get_policy(module):
 
     data = json.loads(response.text)
 
-    name = module.params.get('name', None)
+    name = module.params.get("name", None)
 
-    for policy in data['data']['actor']['account']['alerts']['policiesSearch']['policies']:
+    for policy in data["data"]["actor"]["account"]["alerts"]["policiesSearch"][
+        "policies"
+    ]:
         if policy["name"] == name:
             return policy
 
@@ -73,13 +75,13 @@ def nerdgraph_query(query, module):
         "API-Key": module.params.get("api_key", None),
     }
 
-    url = 'https://api.newrelic.com/graphql'
-    r = requests.post(url, json={'query': query}, headers=headers)
+    url = "https://api.newrelic.com/graphql"
+    r = requests.post(url, json={"query": query}, headers=headers)
     return r
 
 
 def policy_create_mutation(module):
-    return '''mutation {
+    return """mutation {
         alertsPolicyCreate(accountId: %s, policy: {
             incidentPreference: %s, name: "%s"}) {
                 accountId
@@ -88,7 +90,7 @@ def policy_create_mutation(module):
                 name
             }
         }
-        ''' % (
+        """ % (
         module.params.get("account_id"),
         module.params.get("incident_preference"),
         module.params.get("name"),
@@ -96,14 +98,14 @@ def policy_create_mutation(module):
 
 
 def policy_update_mutation(policy, module):
-    return '''mutation {
+    return """mutation {
         alertsPolicyUpdate(policy: {incidentPreference: %s, name: "%s"}, accountId: %s, id: %s) {
             accountId
             id
             incidentPreference
             name
         }
-        }''' % (
+        }""" % (
         module.params.get("incident_preference"),
         module.params.get("name"),
         module.params.get("account_id"),
@@ -112,7 +114,7 @@ def policy_update_mutation(policy, module):
 
 
 def policy_search_query(module):
-    return '''{
+    return """{
             actor {
                 account(id: %s) {
                     alerts {
@@ -128,8 +130,10 @@ def policy_search_query(module):
                     }
                 }
             }
-        }''' % module.params.get("account_id", None)
+        }""" % module.params.get(
+        "account_id", None
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

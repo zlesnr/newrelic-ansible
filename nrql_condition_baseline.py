@@ -21,17 +21,13 @@ def main():
             # signal=dict(required=True, no_log=False),
             # terms=dict(required=True, no_log=False),
             # condition_type=dict(required=True, no_log=False),
-
             baseline_direction=dict(required=True, no_log=False),
             runbook_url=dict(required=False, no_log=False),
-
             expiration_duration=dict(required=True, no_log=False),
-
             critical_operator=dict(required=True, no_log=False),
             critical_threshold=dict(required=True, no_log=False),
             critical_threshold_duration=dict(required=True, no_log=False),
             critical_threshold_occurrences=dict(required=True, no_log=False),
-
             violation_time_limit=dict(required=True, no_log=False),
         )
     )
@@ -52,8 +48,7 @@ def create_condition(module):
     mutation = nrql_condition_baseline_create_mutation(module)
     response = nerdgraph_query(mutation, module)
     if response.status_code != 200:
-        module.fail_json(
-            msg="create_condition failed: {0}".format(response.text))
+        module.fail_json(msg="create_condition failed: {0}".format(response.text))
 
     data = json.loads(response.text)
 
@@ -68,17 +63,17 @@ def update_condition(condition, module):
     mutation = nrql_condition_baseline_update_mutation(condition, module)
     response = nerdgraph_query(mutation, module)
     if response.status_code != 200:
-        module.fail_json(
-            msg="update_condition failed: {0}".format(response.text))
+        module.fail_json(msg="update_condition failed: {0}".format(response.text))
 
     data = json.loads(response.text)
     changed = False
 
-    if data['data']['alertsNrqlConditionBaselineUpdate'] != condition:
+    if data["data"]["alertsNrqlConditionBaselineUpdate"] != condition:
         changed = True
 
     module.exit_json(
-        changed=changed, msg=data['data']['alertsNrqlConditionBaselineUpdate'])
+        changed=changed, msg=data["data"]["alertsNrqlConditionBaselineUpdate"]
+    )
 
 
 def nerdgraph_query(query, module):
@@ -87,13 +82,13 @@ def nerdgraph_query(query, module):
         "API-Key": module.params.get("api_key", None),
     }
 
-    url = 'https://api.newrelic.com/graphql'
-    r = requests.post(url, json={'query': query}, headers=headers)
+    url = "https://api.newrelic.com/graphql"
+    r = requests.post(url, json={"query": query}, headers=headers)
     return r
 
 
 def nrql_condition_fields(module):
-    return '''
+    return """
         description
         enabled
             expiration {
@@ -122,13 +117,13 @@ def nrql_condition_fields(module):
         }
         type
         violationTimeLimit
-        '''
+        """
 
 
 def nrql_condition_baseline_query(module):
     fields = nrql_condition_fields(module)
     account_id = module.params.get("account_id", None)
-    return '''{
+    return """{
             actor {
                 account(id: %s) {
                     alerts {
@@ -145,10 +140,10 @@ def nrql_condition_baseline_query(module):
                     }
                 }
             }
-        }''' % (
+        }""" % (
         account_id,
         fields,
-        fields
+        fields,
     )
 
 
@@ -165,13 +160,13 @@ def condition_string(module):
 
     critical_operator = module.params.get("critical_operator", None)
     critical_threshold = module.params.get("critical_threshold", None)
-    critical_threshold_duration = module.params.get(
-        "critical_threshold_duration", None)
+    critical_threshold_duration = module.params.get("critical_threshold_duration", None)
     critical_threshold_occurrences = module.params.get(
-        "critical_threshold_occurrences", None)
+        "critical_threshold_occurrences", None
+    )
     violation_time_limit = module.params.get("violation_time_limit", None)
 
-    return '''
+    return """
         condition: {
             name: "%s",
             description: "%s",
@@ -194,7 +189,7 @@ def condition_string(module):
                 thresholdOccurrences: %s
             },
             violationTimeLimit: %s
-        }''' % (
+        }""" % (
         name,
         description,
         baseline_direction,
@@ -214,9 +209,9 @@ def nrql_condition_baseline_update_mutation(condition, module):
     fields = nrql_condition_fields(module)
     account_id = module.params.get("account_id", None)
     conditionMutationString = condition_string(module)
-    id = condition.get('id', None)
+    id = condition.get("id", None)
 
-    return '''
+    return """
         mutation {
             alertsNrqlConditionBaselineUpdate(
                 accountId: %s,
@@ -226,7 +221,7 @@ def nrql_condition_baseline_update_mutation(condition, module):
                 baselineDirection
                 %s
             }
-        }''' % (
+        }""" % (
         account_id,
         conditionMutationString,
         id,
@@ -238,9 +233,9 @@ def nrql_condition_baseline_create_mutation(module):
     fields = nrql_condition_fields(module)
     account_id = module.params.get("account_id", None)
     conditionMutationString = condition_string(module)
-    policy_id = module.params.get('policy_id', None)
+    policy_id = module.params.get("policy_id", None)
 
-    return '''mutation {
+    return """mutation {
         alertsNrqlConditionBaselineCreate(
             accountId: %s,
             %s
@@ -249,11 +244,11 @@ def nrql_condition_baseline_create_mutation(module):
                 baselineDirection
                 %s
             }
-        }''' % (
+        }""" % (
         account_id,
         conditionMutationString,
         policy_id,
-        fields
+        fields,
     )
 
 
@@ -264,14 +259,16 @@ def get_condition(module):
     if response.status_code != 200:
         module.fail_json(msg="query failed: {0}".format(response.text))
 
-    id = module.params.get('id', None)
-    name = module.params.get('name', None)
+    id = module.params.get("id", None)
+    name = module.params.get("name", None)
 
     data = json.loads(response.text)
 
     module.debug(str(data))
 
-    for condition in data['data']['actor']['account']['alerts']['nrqlConditionsSearch']['nrqlConditions']:
+    for condition in data["data"]["actor"]["account"]["alerts"]["nrqlConditionsSearch"][
+        "nrqlConditions"
+    ]:
         if id is not None and condition["id"] == id:
             return condition
 
@@ -281,5 +278,5 @@ def get_condition(module):
     return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
