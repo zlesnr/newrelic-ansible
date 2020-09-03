@@ -1,0 +1,29 @@
+---
+- name: test my new module
+  hosts: localhost
+  tasks:
+    - name: manage an alert policy
+      alert_policy:
+        api_key: "{{lookup('env','NEW_RELIC_API_KEY')}}"
+        account_id: "{{lookup('env','NEW_RELIC_ACCOUNT_ID')}}"
+        name: "zleslie test"
+        incident_preference: "PER_POLICY"
+    - name: manage an alert policy baseline condition
+      nrql_condition_baseline:
+        api_key: "{{lookup('env','NEW_RELIC_API_KEY')}}"
+        account_id: "{{lookup('env','NEW_RELIC_ACCOUNT_ID')}}"
+        name: "zleslie test"
+        nrql_query: "SELECT count(*) FROM SyntheticCheck WHERE result != 'SUCCESS' and monitorName = 'things and stuff'"
+        policy_id: "1026412"
+        baseline_direction: "LOWER_ONLY"
+        expiration_duration: 3600
+        enabled: "true"
+        critical_operator: ABOVE
+        critical_threshold: 10
+        critical_threshold_duration: 120
+        critical_threshold_occurrences: ALL
+        violation_time_limit: EIGHT_HOURS
+    #   register: testout
+    # - name: dump test output
+    #   debug:
+    #     msg: "{{ testout }}"

@@ -17,33 +17,19 @@ def main():
         )
     )
 
-    options = {
-        'api_key': module.params['api_key'],
-        'account_id': module.params['account_id'],
-    }
-
-    msg = "none"
-
     try:
-        query = policy_search_query(module)
-        response = nerdgraph_query(query, module)
-        if response.status_code != 200:
-            module.fail_json(msg="query failed: {0}".format(response.text))
-
-        json_data = json.loads(response.text)
-
-        policy = get_policy(module.params['name'], json_data)
+        policy = get_policy(module)
         if policy:
             update_policy(policy, module)
         else:
             create_policy(module)
 
-        module.exit_json(changed=False, msg="no update")
+        module.exit_json(changed=False, msg=policy)
     except Exception as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
 
-def create_policy(policy, module):
+def create_policy(module):
     mutation = policy_create_mutation(module)
     response = nerdgraph_query(mutation, module)
     if response.status_code != 200:
@@ -64,7 +50,16 @@ def update_policy(policy, module):
         module.exit_json(changed=True, msg=json_data)
 
 
-def get_policy(name, data):
+def get_policy(module):
+    query = policy_search_query(module)
+    response = nerdgraph_query(query, module)
+    if response.status_code != 200:
+        module.fail_json(msg="query failed: {0}".format(response.text))
+
+    data = json.loads(response.text)
+
+    name = module.params.get('name', None)
+
     for policy in data['data']['actor']['account']['alerts']['policiesSearch']['policies']:
         if policy["name"] == name:
             return policy
@@ -73,11 +68,6 @@ def get_policy(name, data):
 
 
 def nerdgraph_query(query, module):
-    # curl -X POST https://api.newrelic.com/graphql \
-    # -H 'Content-Type: application/json' \
-    # -H 'API-Key: YOUR_API_KEY' \
-    # -d '{ "query":  "{ requestContext { userId apiKey } }" } '
-
     headers = {
         "Content-Type": "application/json",
         "API-Key": module.params.get("api_key", None),
@@ -90,12 +80,13 @@ def nerdgraph_query(query, module):
 
 def policy_create_mutation(module):
     return '''mutation {
-        alertsPolicyCreate(accountId: %s, policy: {incidentPreference: %s, name: "%s"}) {
-            accountId
-            id
-            incidentPreference
-            name
-        }
+        alertsPolicyCreate(accountId: %s, policy: {
+            incidentPreference: %s, name: "%s"}) {
+                accountId
+                id
+                incidentPreference
+                name
+            }
         }
         ''' % (
         module.params.get("account_id"),
